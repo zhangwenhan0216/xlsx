@@ -1,0 +1,18 @@
+import Vue from 'vue'
+import VueRouter from 'vue-router'
+
+Vue.use(VueRouter)
+
+  const routes = [
+  {
+    path: '/',
+    name: 'upload',
+    component: () => import(/* webpackChunkName: "about" */ '../views/upload.vue')
+  }
+]
+
+const router = new VueRouter({
+  routes
+})
+
+export default router
