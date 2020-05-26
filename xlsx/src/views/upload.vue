@@ -36,6 +36,7 @@
     <div id="fileList">
       <p>没有选择文件</p>
     </div>
+    <iframe id="viewer"></iframe>
   </div>
 </template>
 
@@ -71,37 +72,41 @@ export default {
       fileElem = document.getElementById("fileElem"),
       fileList = document.getElementById("fileList");
 
-    fileSelect.addEventListener('click', (e)=>{
-      if(fileElem){
-        fileElem.click()
-      }
-      e.preventDefault()
-    }, false)
+    fileSelect.addEventListener(
+      "click",
+      e => {
+        if (fileElem) {
+          fileElem.click();
+        }
+        e.preventDefault();
+      },
+      false
+    );
   },
   methods: {
-    handleImage(){
+    handleImage() {
       var fileInput = document.querySelector("#fileElem");
       var files = fileInput.files;
-      if(!files.length){
-        fileList.innerHTML = '<p>no files selected</p>'
-      }else{
-        fileList.innerHTML = '';
-        let list = document.createElement('ul');
+      if (!files.length) {
+        fileList.innerHTML = "<p>no files selected</p>";
+      } else {
+        fileList.innerHTML = "";
+        let list = document.createElement("ul");
         fileList.appendChild(list);
-        for(let i=0;i<files.length;i++){
-          let li = document.createElement('li');
-          list.appendChild(li)
+        for (let i = 0; i < files.length; i++) {
+          let li = document.createElement("li");
+          list.appendChild(li);
 
-          let img = document.createElement('img');
+          let img = document.createElement("img");
           img.src = window.URL.createObjectURL(files[i]);
           img.height = 60;
-          img.onload = function(){
+          img.onload = function() {
             window.URL.revokeObjectURL(this.src);
-          }
+          };
           li.appendChild(img);
-          let info = document.createElement('span');
-          info.innerHTML = files[i].name + ':' + files[i].size + 'bytes';
-          li.appendChild(info)
+          let info = document.createElement("span");
+          info.innerHTML = files[i].name + ":" + files[i].size + "bytes";
+          li.appendChild(info);
         }
       }
     },
@@ -126,7 +131,6 @@ export default {
     handleFiles(files) {
       for (let i = 0; i < files.length; i++) {
         let file = files[i];
-        console.log(file.type);
         let imageType = /^image\//;
         if (!imageType.test(file.type)) {
           continue;
@@ -144,59 +148,72 @@ export default {
         reader.readAsDataURL(file);
       }
     },
-    sendFiles(){
-      let imgs = document.querySelectorAll('.obj');
-      for(let i= 0;i<imgs.length;i++){
-        new FileUpload(imgs[i], imgs[i].file)
+    sendFiles() {
+      let imgs = document.querySelectorAll(".obj");
+      for (let i = 0; i < imgs.length; i++) {
+        new FileUpload(imgs[i], imgs[i].file);
       }
     },
-    FileUpload(img, file){
-      var reader = new FileReader();  
-  this.ctrl = createThrobber(img);
-  var xhr = new XMLHttpRequest();
-  this.xhr = xhr;
-  
-  var self = this;
-  this.xhr.upload.addEventListener("progress", function(e) {
-        if (e.lengthComputable) {
-          var percentage = Math.round((e.loaded * 100) / e.total);
-          self.ctrl.update(percentage);
-        }
-      }, false);
-  
-  xhr.upload.addEventListener("load", function(e){
+    FileUpload(img, file) {
+      var reader = new FileReader();
+      this.ctrl = createThrobber(img);
+      var xhr = new XMLHttpRequest();
+      this.xhr = xhr;
+
+      var self = this;
+      this.xhr.upload.addEventListener(
+        "progress",
+        function(e) {
+          if (e.lengthComputable) {
+            var percentage = Math.round((e.loaded * 100) / e.total);
+            self.ctrl.update(percentage);
+          }
+        },
+        false
+      );
+
+      xhr.upload.addEventListener(
+        "load",
+        function(e) {
           self.ctrl.update(100);
           var canvas = self.ctrl.ctx.canvas;
           canvas.parentNode.removeChild(canvas);
-      }, false);
-  xhr.open("POST", "http://demos.hacks.mozilla.org/paul/demos/resources/webservices/devnull.php");
-  xhr.overrideMimeType('text/plain; charset=x-user-defined-binary');
-  reader.onload = function(evt) {
-    xhr.send(evt.target.result);
-  };
-  reader.readAsBinaryString(file);
+        },
+        false
+      );
+      xhr.open(
+        "POST",
+        "http://demos.hacks.mozilla.org/paul/demos/resources/webservices/devnull.php"
+      );
+      xhr.overrideMimeType("text/plain; charset=x-user-defined-binary");
+      reader.onload = function(evt) {
+        xhr.send(evt.target.result);
+      };
+      reader.readAsBinaryString(file);
     },
-    handlePDF(files) {
+    async handlePDF(files) {
       for (let i = 0; i < files.length; i++) {
         let file = files[i];
-        console.log(file.type);
         let pdfType = /\/pdf$/;
         if (!pdfType.test(file.type)) {
           continue;
         }
-        let node = document.createElement("div");
-        node.classList.add("obj");
-        node.file = file;
-        document.getElementById("preview").appendChild(node);
-        let reader = new FileReader();
-        reader.onload = (function(aPDF) {
-          return function(e) {
-            aPDF.src = e.target.result;
-          };
-        })(node);
-        // 开始读取指定的Blob中的内容。一旦完成，result属性中将包含一个data: URL格式的Base64字符串以表示所读取文件的内容。
-        reader.readAsDataURL(file);
+        console.log(file.type);
+        // let data = await this.readPDF(file);
+        // console.log(data);
+        const obj_url = window.URL.createObjectURL(file);
+        let iframe = document.getElementById("viewer");
+        iframe.setAttribute("src", obj_url);
       }
+    },
+    readPDF(file) {
+      return new Promise(resolve => {
+        let reader = new FileReader();
+        reader.readAsText(file, "utf-8");
+        reader.onload = ev => {
+          resolve(ev.target.result);
+        };
+      });
     },
     pullfiles() {
       var fileInput = document.querySelector("#myfiles");
@@ -208,7 +225,6 @@ export default {
       while (i < fl) {
         // localize file var in the loop
         var file = files[i];
-        console.log(file.name);
         i++;
       }
     },
@@ -233,7 +249,6 @@ export default {
         }
         arr.push(obj);
       });
-      console.log(arr);
     },
     readFile(file) {
       return new Promise(resolve => {
